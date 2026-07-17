@@ -1,20 +1,58 @@
-name: validate
+name: add codex-reviewed
 
 on:
-  workflow_run:
-    workflows:
-      - add codex-reviewed
+  pull_request:
     types:
-      - completed
+      - labeled
+
+permissions:
+  pull-requests: write
 
 jobs:
-  test:
-    # Only run if the first workflow succeeded
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+  add-label:
     runs-on: ubuntu-latest
-
+    if: github.event.label.name == 'codex-review'
     steps:
-      - uses: actions/github-script@v7
+      - name: Remove codex-review label
+        uses: actions/github-script@v7
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            core.setFailed("This is a bug");
+            try {
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                name: 'codex-review'
+              });
+            } catch (error) {
+              if (error.status !== 404) throw error;
+            }
+
+      - name: Remove codex-reviewed label (if exists)
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            try {
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                name: 'codex-reviewed'
+              });
+            } catch (error) {
+              if (error.status !== 404) throw error;
+            }
+
+      - name: Add codex-reviewed label
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['codex-reviewed']
+            });
