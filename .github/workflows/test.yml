@@ -6,7 +6,7 @@ on:
 
 jobs:
   test:
-#    if: ${{ github.event.label.name == 'validate' }}
+    if: ${{ github.event.label.name == 'validate' }}
     runs-on: ubuntu-latest
     steps:
       - name: validate
